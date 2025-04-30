@@ -1,2 +1,95 @@
 # LZURunningHelper
-兰大悦跑
+
+兰大悦跑模拟
+
+本项目改写自 [PKURunningHelper](https://github.com/RinCloud/PKURunningHelper)，所做的工作仅仅是在这个项目的基础之上修改了地图路径数据，直接适配于 LZU
+
+鉴于本校二手群中有人使用类似项目盈利，打着人工代跑的旗号，实际上利用虚拟定位提供路径严重偏差的低劣服务，因此将这个自己用的小工具开源
+
+~~是一个不想跑步不会写代码的卑微大学生低创项目~~
+
+# 环境配置（已有 Python 3.9 环境可以跳过）
+
+1. 从官网下载 [python 3.9.x](https://www.python.org/ftp/python/3.9.13/python-3.9.13-amd64.exe)
+
+2. 运行安装程序，**请注意这里要勾选选项“Add Python 3.9 to PATH”**，并请记录 Install Now 下方的安装路径，以本机为例：
+    ```plaintext
+    C:\Users\*\AppData\Local\Programs\Python\Python39
+    ```
+![alt text](images/image.png)
+
+3. 克隆本仓库：
+    ```bash
+    git clone https://github.com/TarikVon/LZURunningHelper.git
+    ```
+    
+    然后进入项目目录：
+    ```bash
+    cd LZURunningHelper
+    ```
+
+4. 在项目根目录 (`LZURunningHelper`) 下，打开命令行工具，执行以下命令来创建虚拟环境：
+    ```bash
+    C:\Users\*\AppData\Local\Programs\Python\Python39 -m venv .venv
+    ```
+    > 注意这里的 “\*” 需要换成你自己的用户文件夹。
+
+5. 激活虚拟环境（CMD）：
+    ```bash
+    .\.venv\Scripts\activate.bat
+    ```
+6. 安装环境依赖：
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+# 软件使用
+1. 编辑项目目录中 `config.ini` 文件，根据里面的注释修改配置：
+    ```ini
+    # filename: config.ini
+    # coding: utf-8
+    [Base]
+    APP: Joyrun
+    debug: true
+
+    # StudentID: 在这里输入你的学号，不用带邮箱后缀，例：1145141919810
+    # Password: 密码，默认为 123456
+    # suffix: 邮箱后缀，一般不用修改
+    [Joyrun]
+    StudentID: 
+    Password: 
+    suffix: @lzu.edu.cn
+
+    # record_type: 选择你想要的跑步路径，可以有以下值：
+    # - dongcao: 东操
+    # - xicao: 西操
+    # - random: 随机
+    record_type: random
+    record_number: 1
+
+    # distance: 距离，单位 km
+    # pace: 每公里多少分钟，一般不用修改
+    # stride_frequncy: 步幅，一般不用修改
+    distance: 2
+    pace: 5.50
+    stride_frequncy: 170
+    ```
+2. 在项目目录下，激活虚拟环境后，运行指令：
+    ```bash
+    python .\main.py -s
+    ```
+3. 若看到控制台最后输出以下内容，则代表跑步记录发布成功：
+    ```plaintext
+    [DEBUG] joyrun, 2025-05-01 02:37:20, response.json = {
+        "fid": xxx,
+        "postRunId": xxx,
+        "ret": "0",
+        "msg": "发布成功",
+        "sid": "xxx",
+        "fraud": "0",
+        "lasttime": xxx,
+        "weixinurl": "xxx",
+        "fraudSubStatus": 0,
+        "multipleUpload": false
+    ```
+4. 此时，打开悦跑圈 APP 确认你的记录。

@@ -30,7 +30,7 @@
 
 4. 在项目根目录 (`LZURunningHelper`) 下，打开命令行工具，执行以下命令来创建虚拟环境：
     ```bash
-    C:\Users\*\AppData\Local\Programs\Python\Python39 -m venv .venv
+    C:\Users\*\AppData\Local\Programs\Python\Python39\python.exe -m venv .venv
     ```
     > 注意这里的 “\*” 需要换成你自己的用户文件夹。
 

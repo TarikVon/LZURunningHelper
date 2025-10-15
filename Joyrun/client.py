@@ -135,6 +135,10 @@ class JoyrunClient(object):
     def __init__(self):
         self.userName = "{studentId}{suffix}".format(studentId=config.get("Joyrun", "StudentID"), suffix=config.get("Joyrun", "suffix"))
         self.password = config.get("Joyrun", "Password")
+        try:
+            self.phone = config.get("Joyrun", "Phone")
+        except Exception:
+            self.phone = ""
 
         try:
             cache = json_load(self.Cache_LoginInfo)
@@ -224,6 +228,26 @@ class JoyrunClient(object):
 
         return respJson
 
+    # 允许 ret 非 0 的请求（用于登录前置探测）
+    def __request_allow_nonzero(self, method, url, **kwargs):
+        if url[:7] != "http://" and url[:8] != "https://":
+            url = "{base}/{path}".format(base=self.BaseUrl, path=url[1:] if url[0] == "/" else url)
+
+        resp = self.session.request(method, url, **kwargs)
+        if not resp.ok:
+            self.logger.error("request.url = %s" % resp.url)
+            self.logger.error("request.headers = %s" % pretty_json(dict(resp.request.headers)))
+            self.logger.error("session.cookies = %s" % pretty_json(self.session.cookies.get_dict()))
+            if resp.request.method == "POST":
+                self.logger.error("request.body = %s" % resp.request.body)
+            self.logger.error("response.text = %s" % resp.text)
+            raise JoyrunRequestStatusError("response.ok error")
+
+        respJson = resp.json()
+        self.logger.debug("request.url = %s" % resp.url)
+        self.logger.debug("response.json = %s" % pretty_json(respJson))
+        return respJson
+
     def get(self, url, params={}, **kwargs):
         return self.__reqeust("GET", url, params=params, **kwargs)
 
@@ -271,12 +295,103 @@ class JoyrunClient(object):
             "username": self.userName,
             "pwd": MD5(self.password).upper(),
         }
-        respJson = self.get("//user/login/normal", params, auth=self.auth.reload(params))
 
-        self.sid = respJson["data"]["sid"]
-        self.uid = int(respJson["data"]["user"]["uid"])
+        probe = self.__request_allow_nonzero("GET", "//user/login/normal", params=params, auth=self.auth.reload(params))
+        ret = str(probe.get("ret", ""))
 
-        json_dump(self.Cache_LoginInfo, {"userName": self.userName, "sid": self.sid, "uid": self.uid})  # 缓存新的登录信息
+        if ret == "0":
+            respJson = probe
+            self.sid = respJson["data"]["sid"]
+            self.uid = int(respJson["data"]["user"]["uid"])
+            json_dump(self.Cache_LoginInfo, {"userName": self.userName, "sid": self.sid, "uid": self.uid})  # 缓存新的登录信息
+            self.__update_loginInfo()
+            return
+
+        if ret == "41998":
+            self.logger.warning("检测到新设备登录，需要手机号+验证码")
+            self.login_by_phonecode()
+            return
+
+        self.logger.error("response.json = %s" % pretty_json(probe))
+        raise JoyrunRetStateError("response.json error")
+
+    def login_by_phonecode(self, code: str = ""):
+        """验证码登录"""
+        phone = (self.phone or "").strip()
+        if not phone:
+            phone = input("请输入用于登录的手机号: ").strip()
+            if not phone:
+                raise JoyrunRetStateError("未提供手机号，无法进行验证码登录")
+            self.phone = phone
+
+        areacode_plus = "+86"
+
+        def _try_send_sms():
+            """直接调用悦跑圈 H5 端 sendSms 接口"""
+            try:
+                wap_headers = {
+                    "Accept": "application/json, text/javascript, */*; q=0.01",
+                    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                    "Origin": "https://wap.thejoyrun.com",
+                    "Referer": "https://wap.thejoyrun.com/outLogin/phoneLogin",
+                    "X-Requested-With": "XMLHttpRequest",
+                    "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) " "AppleWebKit/537.36 (KHTML, like Gecko) " "Chrome/141.0.0.0 Safari/537.36"),
+                }
+                body = {
+                    "phone": phone,
+                    "areacode": areacode_plus,
+                    "lang": "zh",
+                }
+                r = requests.post(
+                    "https://wap.thejoyrun.com/outLogin/sendSms",
+                    data=body,
+                    headers=wap_headers,
+                    timeout=10,
+                )
+                raw_text = r.text
+                if "\\u" in raw_text:
+                    raw_text = raw_text.encode("utf-8").decode("unicode_escape")
+
+                if not r.ok:
+                    self.logger.error(f"WAP sendSms HTTP {r.status_code}, text={raw_text[:200]}")
+                    return False
+
+                self.logger.info(f"WAP sendSms HTTP {r.status_code}, text={raw_text[:200]}")
+                return True
+            except Exception as _e:
+                self.logger.error(f"WAP sendSms 异常: {_e}")
+                return False
+
+        # 发送验证码
+        if _try_send_sms():
+            print(f"验证码已发送至 {phone}，请注意查收。")
+        else:
+            print("发送验证码失败，可能接口被限制，可手动在 App 登录一次。")
+
+        if not code:
+            code = input("请输入短信验证码: ").strip()
+            if not code:
+                raise JoyrunRetStateError("未输入验证码，无法进行验证码登录")
+
+        params = {
+            "phoneNumber": phone,
+            "identifyingCode": code,
+        }
+
+        respJson = self.__request_allow_nonzero("GET", "/user/login/phonecode", params=params, auth=self.auth.reload(params))
+        if str(respJson.get("ret", "")) != "0":
+            self.logger.error("response.json = %s" % pretty_json(respJson))
+            raise JoyrunRetStateError("验证码登录失败")
+
+        data = respJson.get("data") or {}
+        self.sid = data.get("sid") or data.get("sessionId") or ""
+        user_block = data.get("user") or {}
+        self.uid = int(user_block.get("uid") or data.get("uid") or 0)
+
+        print(f"your uid: {self.uid}, your sid: {self.sid}")
+
+        json_dump(self.Cache_LoginInfo, {"userName": self.userName, "sid": self.sid, "uid": self.uid})
         self.__update_loginInfo()
 
     def logout(self):

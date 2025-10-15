@@ -27,7 +27,7 @@ else:
     raise APPTypeError("unsupported running APP -- %s !" % app)
 
 
-parser = OptionParser(description="PKU running helper! Check your config first, then enjoy yourself!")
+parser = OptionParser(description="LZU running helper! Check your config first, then enjoy yourself!")
 parser.add_option("-c", "--check", help="show 'config.ini' file", action="store_false")
 parser.add_option("-s", "--start", help="start uploading job with %s Client" % app, action="store_false")
 

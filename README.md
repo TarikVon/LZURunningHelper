@@ -6,16 +6,13 @@
 
 鉴于本校二手群中有人使用类似项目盈利，打着人工代跑的旗号，实际上利用虚拟定位提供路径严重偏差的低劣服务，因此将这个自己用的小工具开源
 
-~~是一个不想跑步不会写代码的卑微大学生低创项目~~
+~~使用中有问题欢迎提 issue，秒修的 QWQ~~
 
 # 环境配置（已有 Python 3.9 环境可以跳过）
 
 1. 从官网下载 [python 3.9.x](https://www.python.org/ftp/python/3.9.13/python-3.9.13-amd64.exe)
 
-2. 运行安装程序，**请注意这里要勾选选项“Add Python 3.9 to PATH”**，并请记录 Install Now 下方的安装路径，以本机为例：
-    ```plaintext
-    C:\Users\*\AppData\Local\Programs\Python\Python39
-    ```
+2. 运行安装程序，**请注意这里要勾选选项“Add Python 3.9 to PATH”**，以本机为例：
 ![alt text](images/image.png)
 
 3. 克隆本仓库：
@@ -28,11 +25,11 @@
     cd LZURunningHelper
     ```
 
-4. 在项目根目录 (`LZURunningHelper`) 下，打开命令行工具，执行以下命令来创建虚拟环境：
+4. 在项目根目录 (`LZURunningHelper`) 下，按 `Win+R` 输入 `cmd` 打开命令行工具，执行以下命令来创建虚拟环境：
     ```bash
-    C:\Users\*\AppData\Local\Programs\Python\Python39\python.exe -m venv .venv
+    "%LOCALAPPDATA%\Programs\Python\Python39\python.exe" -m venv .venv
     ```
-    > 注意这里的 “\*” 需要换成你自己的用户文件夹。
+    > 注意这里的终端要使用 cmd，PowerShell 指令会报错
 
 5. 激活虚拟环境（CMD）：
     ```bash
@@ -55,10 +52,12 @@
     # StudentID: 在这里输入你的学号，不用带邮箱后缀，例：1145141919810
     # Password: 密码，默认为 123456
     # suffix: 邮箱后缀，一般不用修改
+    # Phone: 手机号（可选），当账号已绑定手机，需要短信验证码时输入
     [Joyrun]
     StudentID: 
     Password: 
     suffix: @lzu.edu.cn
+    Phone: 
 
     # record_type: 选择你想要的跑步路径，可以有以下值：
     # - dongcao: 东操

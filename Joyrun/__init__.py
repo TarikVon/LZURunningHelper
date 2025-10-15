@@ -9,7 +9,7 @@
 #
 
 __author__ = "Rabbit"
-__date__   = "2018.10.01"
+__date__ = "2018.10.01"
 
 
 from .client import JoyrunClient

@@ -30,19 +30,34 @@ except (ImportError, SystemError, ValueError):
 
 try:
     from ..util import (
-        Config, Logger,
-        pretty_json, json_load, json_dump, MD5,
-        json, JSONDecodeError, random,
-        RecordTypeError, RecordNumberError,
+        Config,
+        Logger,
+        pretty_json,
+        json_load,
+        json_dump,
+        MD5,
+        json,
+        JSONDecodeError,
+        random,
+        RecordTypeError,
+        RecordNumberError,
     )
 except (ImportError, SystemError, ValueError):
     import sys
+
     sys.path.append("../")
     from util import (
-        Config, Logger,
-        pretty_json, json_load, json_dump, MD5,
-        json, JSONDecodeError, random,
-        RecordTypeError, RecordNumberError,
+        Config,
+        Logger,
+        pretty_json,
+        json_load,
+        json_dump,
+        MD5,
+        json,
+        JSONDecodeError,
+        random,
+        RecordTypeError,
+        RecordNumberError,
     )
 
 
@@ -55,19 +70,22 @@ json_dump = partial(json_dump, Cache_Dir)
 config = Config()
 
 
-__all__ = ["JoyrunClient",]
+__all__ = [
+    "JoyrunClient",
+]
 
 
 def sid_invalid_retry(retry=1):
-    """ 会话 ID 失效，一般是因为在手机上登录，导致上次登录的 sid 失效。
-        该函数用于返回一个函数修饰器，被修饰的 API 函数如果抛出 sid 失效错误，
-        则重新登录后重新调用 API 函数，最高 retry 次
+    """会话 ID 失效，一般是因为在手机上登录，导致上次登录的 sid 失效。
+    该函数用于返回一个函数修饰器，被修饰的 API 函数如果抛出 sid 失效错误，
+    则重新登录后重新调用 API 函数，最高 retry 次
 
-        Args:
-            retry    int    重新尝试的次数，默认只重试一次
-        Raises:
-            JoyrunSidInvalidError    超过重复校验次数后仍然鉴权失败
+    Args:
+        retry    int    重新尝试的次数，默认只重试一次
+    Raises:
+        JoyrunSidInvalidError    超过重复校验次数后仍然鉴权失败
     """
+
     def func_wrapper(func):
         @wraps(func)
         def return_wrapper(self, *args, **kwargs):
@@ -85,37 +103,37 @@ def sid_invalid_retry(retry=1):
                 except Exception as err:
                     raise err
             raise JoyrunSidInvalidError("reach retry limit %s" % retry)
+
         return return_wrapper
+
     return func_wrapper
 
 
 class JoyrunClient(object):
-    """ Joyrun 悦跑圈客户端类
+    """Joyrun 悦跑圈客户端类
 
-        Attributes:
-            class:
-                logger                Logger            日志类实例
-                BaseUrl               str               API 基础链接
-                Cache_LoginInfo       str               登录状态缓存 json 文件名
-            instance:
-                userName              str               登录用户名
-                password              str               登录密码
-                session               request.Session   requests 会话类实例
-                auth                  JoyrunAuth        Jourun 请求鉴权类实例
-                uid                   int               用户 ID
-                sid                   str               会话 ID
-                base_headers          dict              基础请求头
-                device_info_headers   dict              设备信息请求头
+    Attributes:
+        class:
+            logger                Logger            日志类实例
+            BaseUrl               str               API 基础链接
+            Cache_LoginInfo       str               登录状态缓存 json 文件名
+        instance:
+            userName              str               登录用户名
+            password              str               登录密码
+            session               request.Session   requests 会话类实例
+            auth                  JoyrunAuth        Jourun 请求鉴权类实例
+            uid                   int               用户 ID
+            sid                   str               会话 ID
+            base_headers          dict              基础请求头
+            device_info_headers   dict              设备信息请求头
     """
+
     logger = Logger("joyrun")
     BaseUrl = "https://api.thejoyrun.com"
     Cache_LoginInfo = "Joyrun_LoginInfo.json"
 
     def __init__(self):
-        self.userName = "{studentId}{suffix}".format(
-            studentId=config.get("Joyrun", "StudentID"),
-            suffix=config.get("Joyrun", "suffix")
-        )
+        self.userName = "{studentId}{suffix}".format(studentId=config.get("Joyrun", "StudentID"), suffix=config.get("Joyrun", "suffix"))
         self.password = config.get("Joyrun", "Password")
 
         try:
@@ -125,10 +143,10 @@ class JoyrunClient(object):
 
         if cache.get("userName") == self.userName:
             self.uid = cache.get("uid", 0)
-            self.sid = cache.get("sid", '')
+            self.sid = cache.get("sid", "")
         else:  # userName 不匹配，则不使用缓存信息
             self.uid = 0
-            self.sid = ''
+            self.sid = ""
 
         self.session = requests.Session()
 
@@ -162,22 +180,21 @@ class JoyrunClient(object):
         }
 
     def __reqeust(self, method, url, **kwargs):
-        """ 网路请求函数模板，对返回结果做统一校验
+        """网路请求函数模板，对返回结果做统一校验
 
-            Args:
-                method            str    请求 method
-                url               str    请求 url/path
-                **kwargs                 传给 requests.request 函数
-            Returns:
-                respJson      jsonData   json 数据
-            Raises:
-                JoyrunRequestStatusError    请求状态码异常
-                JoyrunRetStateError         ret 字段非 0 -> 请求结果异常
-                JoyrunSidInvalidError       sid 失效，登录状态异常
+        Args:
+            method            str    请求 method
+            url               str    请求 url/path
+            **kwargs                 传给 requests.request 函数
+        Returns:
+            respJson      jsonData   json 数据
+        Raises:
+            JoyrunRequestStatusError    请求状态码异常
+            JoyrunRetStateError         ret 字段非 0 -> 请求结果异常
+            JoyrunSidInvalidError       sid 失效，登录状态异常
         """
         if url[:7] != "http://" and url[:8] != "https://":
-            url = "{base}/{path}".format(base=self.BaseUrl,
-                                         path=url[1:] if url[0] == '/' else url)  # //user/login/normal 需要保留两个 '/' !
+            url = "{base}/{path}".format(base=self.BaseUrl, path=url[1:] if url[0] == "/" else url)  # //user/login/normal 需要保留两个 '/' !
 
         resp = self.session.request(method, url, **kwargs)
         # self.logger.debug("request.url = %s" % resp.url)
@@ -189,7 +206,7 @@ class JoyrunClient(object):
             self.logger.error("request.url = %s" % resp.url)
             self.logger.error("request.headers = %s" % pretty_json(dict(resp.request.headers)))
             self.logger.error("session.cookies = %s" % pretty_json(self.session.cookies.get_dict()))
-            if resp.request.method == 'POST':
+            if resp.request.method == "POST":
                 self.logger.error("request.body = %s" % resp.request.body)
             self.logger.error("response.text = %s" % resp.text)
             raise JoyrunRequestStatusError("response.ok error")
@@ -208,18 +225,18 @@ class JoyrunClient(object):
         return respJson
 
     def get(self, url, params={}, **kwargs):
-        return self.__reqeust('GET', url, params=params, **kwargs)
+        return self.__reqeust("GET", url, params=params, **kwargs)
 
     def post(self, url, data={}, **kwargs):
-        return self.__reqeust('POST', url, data=data, **kwargs)
+        return self.__reqeust("POST", url, data=data, **kwargs)
 
     def __update_loginInfo(self):
-        """ 更新登录状态信息
+        """更新登录状态信息
 
-            更新本地 uid, sid 记录
-            更新鉴权实例 uid, sid 记录
-            更新 cookies 信息
-            更新 headers 设备信息
+        更新本地 uid, sid 记录
+        更新鉴权实例 uid, sid 记录
+        更新 cookies 信息
+        更新 headers 设备信息
         """
         self.auth.reload(uid=self.uid, sid=self.sid)
         loginCookie = "sid=%s&uid=%s" % (self.sid, self.uid)
@@ -229,8 +246,7 @@ class JoyrunClient(object):
         self.session.headers.update(self.device_info_headers)  # 更新设备信息中的 uid 字段
 
     def __parse_record(self, respJson):
-        """ 解析 get_record 返回的 json 包
-        """
+        """解析 get_record 返回的 json 包"""
         r = respJson["runrecord"]
         r["altitude"] = json.loads(r["altitude"])
         r["heartrate"] = json.loads(r["heartrate"])
@@ -250,27 +266,22 @@ class JoyrunClient(object):
         respJson = self.get("/dataMessages", params, auth=self.auth.reload(params))
 
     def login(self):
-        """ 登录 API
-        """
+        """登录 API"""
         params = {
             "username": self.userName,
             "pwd": MD5(self.password).upper(),
         }
         respJson = self.get("//user/login/normal", params, auth=self.auth.reload(params))
 
-        self.sid = respJson['data']['sid']
-        self.uid = int(respJson['data']['user']['uid'])
+        self.sid = respJson["data"]["sid"]
+        self.uid = int(respJson["data"]["user"]["uid"])
 
-        json_dump(self.Cache_LoginInfo, {  # 缓存新的登录信息
-            "userName": self.userName,
-            "sid": self.sid,
-            "uid": self.uid
-        })
+        json_dump(self.Cache_LoginInfo, {"userName": self.userName, "sid": self.sid, "uid": self.uid})  # 缓存新的登录信息
         self.__update_loginInfo()
 
     def logout(self):
-        """ 登出 API
-            登出后 sid 仍然不会失效 ！ 可能是闹着玩的 API ...
+        """登出 API
+        登出后 sid 仍然不会失效 ！ 可能是闹着玩的 API ...
         """
         respJson = self.post("/logout.aspx", auth=self.auth.reload())
 
@@ -280,8 +291,7 @@ class JoyrunClient(object):
 
     @sid_invalid_retry(1)
     def get_myInfo(self):
-        """ 获取用户信息 API
-        """
+        """获取用户信息 API"""
         payload = {
             "touid": self.uid,
             "option": "info",
@@ -297,10 +307,7 @@ class JoyrunClient(object):
 
     @sid_invalid_retry(1)
     def get_friends(self):
-        payload = {
-            "dateline": 1,
-            "option": "friends"
-        }
+        payload = {"dateline": 1, "option": "friends"}
         respJson = self.post("/user.aspx", payload, auth=self.auth.reload(payload))
 
     @sid_invalid_retry(1)
@@ -316,8 +323,7 @@ class JoyrunClient(object):
 
     @sid_invalid_retry(1)
     def get_records(self):
-        """ 获取跑步记录 API
-        """
+        """获取跑步记录 API"""
         payload = {
             "year": 0,
         }
@@ -333,8 +339,7 @@ class JoyrunClient(object):
 
     @sid_invalid_retry(1)
     def get_record(self, fid):
-        """ 获取跑步单次记录详情 API
-        """
+        """获取跑步单次记录详情 API"""
         payload = {
             "fid": fid,
             "wgs": 1,
@@ -345,8 +350,7 @@ class JoyrunClient(object):
 
     @sid_invalid_retry(1)
     def upload_record(self, record):
-        """ 上传跑步记录
-        """
+        """上传跑步记录"""
         payload = {
             "altitude": record.altitude,
             "private": 0,
@@ -375,8 +379,7 @@ class JoyrunClient(object):
         respJson = self.post("/po.aspx", payload, auth=self.auth.reload(payload))
 
     def run(self):
-        """ 项目主程序外部调用接口
-        """
+        """项目主程序外部调用接口"""
         distance = config.getfloat("Joyrun", "distance")  # 总距离 km
         pace = config.getfloat("Joyrun", "pace")  # 速度 min/km
         stride_frequncy = config.getint("Joyrun", "stride_frequncy")  # 步频 step/min
@@ -397,13 +400,13 @@ class JoyrunClient(object):
         elif record_number < 0 or record_number > len(record_instances):
             raise RecordNumberError("invalid record number '%s' ! valid range = [0,%s]" % (record_number, len(record_instances)))
         else:
-            Record = getattr(record, record_instances[record_number-1])
+            Record = getattr(record, record_instances[record_number - 1])
 
         _record = Record(distance, pace, stride_frequncy)
         self.upload_record(_record)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     client = JoyrunClient()
     # client.run()
 

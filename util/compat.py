@@ -25,7 +25,7 @@ except ModuleNotFoundError:
 import random
 
 if not hasattr(random, "choices"):
-    """ random.choices 函数至少需要 python 3.6 """
+    """random.choices 函数至少需要 python 3.6"""
 
     import itertools as _itertools
     import bisect as _bisect
@@ -43,9 +43,9 @@ if not hasattr(random, "choices"):
                 return [population[int(random.random() * total)] for i in range(k)]
             cum_weights = list(_itertools.accumulate(weights))
         elif weights is not None:
-            raise TypeError('Cannot specify both weights and cumulative weights')
+            raise TypeError("Cannot specify both weights and cumulative weights")
         if len(cum_weights) != len(population):
-            raise ValueError('The number of weights does not match the population')
+            raise ValueError("The number of weights does not match the population")
         total = cum_weights[-1]
         return [population[_bisect.bisect(cum_weights, random.random() * total)] for i in range(k)]
 

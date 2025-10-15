@@ -7,7 +7,8 @@
 
 from optparse import OptionParser
 from util import (
-    Config, Logger,
+    Config,
+    Logger,
     pretty_json,
     json,
     APPTypeError,
@@ -17,7 +18,7 @@ config = Config()
 logger = Logger("main")
 
 
-app = config.get('Base', 'APP')
+app = config.get("Base", "APP")
 
 
 if app == "Joyrun":

@@ -20,40 +20,39 @@ __all__ = [
 
 
 class Config(object):
-    """ [配置文件类，configparser 模块的封装]
+    """[配置文件类，configparser 模块的封装]
 
-        Attributes:
-            class:
-                Config_File    str                配置文件绝对路径
-            instance:
-                __config       RawConfigParser    RawConfigParser 类实例
+    Attributes:
+        class:
+            Config_File    str                配置文件绝对路径
+        instance:
+            __config       RawConfigParser    RawConfigParser 类实例
     """
+
     Config_File = os.path.abspath(os.path.join(basedir, "config.ini"))
 
     def __init__(self):
         self.__config = RawConfigParser(allow_no_value=True)
-        self.__config.read(self.Config_File, encoding="utf-8-sig") # 必须显示指明 encoding
+        self.__config.read(self.Config_File, encoding="utf-8-sig")  # 必须显示指明 encoding
 
     def __getitem__(self, idx):
-        """ config[] 操作运算的封装
-        """
+        """config[] 操作运算的封装"""
         return self.__config[idx]
 
     def sections(self):
-        """ config.sections 函数的封装
-        """
+        """config.sections 函数的封装"""
         return self.__config.sections()
 
     def __get(self, get_fn, section, key, **kwargs):
-        """ 配置文件 get 函数模板
+        """配置文件 get 函数模板
 
-            Args:
-                get_fn     function    原始的 config.get 函数
-                section    str         section 名称
-                key        str         section 下的 option 名称
-                **kwargs               传入 get_fn
-            Returns:
-                value      str/int/float/bool   返回相应 section 下相应 key 的 value 值
+        Args:
+            get_fn     function    原始的 config.get 函数
+            section    str         section 名称
+            key        str         section 下的 option 名称
+            **kwargs               传入 get_fn
+        Returns:
+            value      str/int/float/bool   返回相应 section 下相应 key 的 value 值
         """
         value = get_fn(section, key, **kwargs)
         if value is None:
@@ -70,6 +69,7 @@ class Config(object):
         Returns:
             value             以特定类型返回相应 section 下相应 key 的 value 值
     """
+
     def get(self, section, key):
         return self.__get(self.__config.get, section, key)
 
@@ -84,18 +84,19 @@ class Config(object):
 
 
 class Logger(object):
-    """ [日志类，logging 模块的封装]
+    """[日志类，logging 模块的封装]
 
-        Attributes:
-            class:
-                Default_Name     str                    缺省的日志名
-                config           Config                 配置文件类实例
-            instance:
-                logger           logging.Logger         logging 的 Logger 对象
-                level            int                    logging.level 级别
-                format           logging.Formatter      日志格式
-                console_headler  logging.StreamHandler  控制台日志 handler
+    Attributes:
+        class:
+            Default_Name     str                    缺省的日志名
+            config           Config                 配置文件类实例
+        instance:
+            logger           logging.Logger         logging 的 Logger 对象
+            level            int                    logging.level 级别
+            format           logging.Formatter      日志格式
+            console_headler  logging.StreamHandler  控制台日志 handler
     """
+
     Default_Name = __name__
     config = Config()
 
@@ -116,6 +117,7 @@ class Logger(object):
         以下是对 logging 的五种 level 输出函数的封装
         并定义 __call__ = logging.info
     """
+
     def debug(self, *args, **kwargs):
         return self.logger.debug(*args, **kwargs)
 

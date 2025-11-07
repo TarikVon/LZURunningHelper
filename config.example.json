@@ -1,0 +1,45 @@
+{
+  "Base": {
+    "APP": "Joyrun",
+    "debug": true
+  },
+  "accounts": [
+    {
+      "name": "账号1",
+      "StudentID": "320250935091",
+      "Password": "123456",
+      "suffix": "@lzu.edu.cn",
+      "Phone": "",
+      "record_type": "random",
+      "record_number": 1,
+      "distance": 4.8,
+      "pace": 4.55,
+      "stride_frequncy": 176
+    },
+    {
+      "name": "账号2",
+      "StudentID": "320250935092",
+      "Password": "123456",
+      "suffix": "@lzu.edu.cn",
+      "Phone": "",
+      "record_type": "dongcao",
+      "record_number": 1,
+      "distance": 4.8,
+      "pace": 4.55,
+      "stride_frequncy": 176
+    }
+  ],
+  "_comment": {
+    "accounts": "账号列表，支持多个账号。每个账号可以配置不同的跑步参数",
+    "name": "账号名称，用于显示（可自定义）",
+    "StudentID": "学号（不需要邮箱后缀，例：1145141919810）",
+    "Password": "密码，默认为 123456",
+    "suffix": "邮箱后缀，一般不用修改",
+    "Phone": "手机号（可选），当账号已绑定手机需要短信验证码时输入",
+    "record_type": "选择跑步路径。可选值：dongcao(东操) | xicao(西操) | random(随机)",
+    "record_number": "选择具体路径。0表示随机，1-N表示选择第N条预设路径",
+    "distance": "跑步距离，单位km",
+    "pace": "每公里用时，单位分钟（一般不用修改）",
+    "stride_frequncy": "步幅，单位步/分钟（一般不用修改）"
+  }
+}

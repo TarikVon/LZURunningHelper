@@ -1,0 +1,56 @@
+{
+  "Base": {
+    "APP": "Joyrun",
+    "debug": false
+  },
+  "accounts": [
+    {
+      "name": "ccb",
+      "StudentID": "320250935091",
+      "Password": "123456",
+      "suffix": "@lzu.edu.cn",
+      "Phone": "",
+      "record_type": "random",
+      "record_number": 1,
+      "distance": 4.8,
+      "pace": 4.55,
+      "stride_frequncy": 176
+    },
+    {
+      "name": "wcl",
+      "StudentID": "320250911130",
+      "Password": "123456",
+      "suffix": "@lzu.edu.cn",
+      "Phone": "",
+      "record_type": "random",
+      "record_number": 1,
+      "distance": 2,
+      "pace": 5.30,
+      "stride_frequncy": 176
+    },    
+    {
+      "name": "account1",
+      "StudentID": "320250935091",
+      "Password": "123456",
+      "suffix": "@lzu.edu.cn",
+      "Phone": "",
+      "record_type": "random",
+      "record_number": 1,
+      "distance": 4.8,
+      "pace": 4.55,
+      "stride_frequncy": 176
+    }
+  ],
+  "_comment": {
+    "accounts": "账号列表，支持多个账号",
+    "StudentID": "在这里输入你的学号，不用带邮箱后缀，例：1145141919810",
+    "Password": "密码，默认为 123456",
+    "suffix": "邮箱后缀，一般不用修改",
+    "Phone": "手机号（可选），当账号已绑定手机，需要短信验证码时输入",
+    "record_type": "选择你想要的跑步路径，可以有以下值：dongcao(东操)、xicao(西操)、random(随机)",
+    "record_number": "运动次数",
+    "distance": "距离，单位 km",
+    "pace": "每公里多少分钟，一般不用修改",
+    "stride_frequncy": "步幅，一般不用修改"
+  }
+}

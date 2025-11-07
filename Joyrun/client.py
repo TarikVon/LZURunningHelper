@@ -60,6 +60,8 @@ except (ImportError, SystemError, ValueError):
         RecordNumberError,
     )
 
+from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
+from rich.console import Console
 
 Root_Dir = os.path.join(os.path.dirname(__file__), "../")
 Cache_Dir = os.path.join(Root_Dir, "cache/")
@@ -68,6 +70,7 @@ json_load = partial(json_load, Cache_Dir)
 json_dump = partial(json_dump, Cache_Dir)
 
 config = Config()
+console = Console()
 
 
 __all__ = [
@@ -132,14 +135,33 @@ class JoyrunClient(object):
     BaseUrl = "https://api.thejoyrun.com"
     Cache_LoginInfo = "Joyrun_LoginInfo.json"
 
-    def __init__(self):
-        self.userName = "{studentId}{suffix}".format(studentId=config.get("Joyrun", "StudentID"), suffix=config.get("Joyrun", "suffix"))
-        self.password = config.get("Joyrun", "Password")
-        try:
-            self.phone = config.get("Joyrun", "Phone")
-        except Exception:
-            self.phone = ""
+    def __init__(self, account_index=None):
+        """初始化 Joyrun 客户端
 
+        Args:
+            account_index: 账号索引，如果为None则使用第一个账号
+        """
+        # 获取账号配置
+        accounts = config["accounts"]
+        if not accounts or len(accounts) == 0:
+            raise ValueError("config.json 中未找到账号配置")
+        
+        if account_index is None:
+            account_index = 0
+        elif account_index < 0 or account_index >= len(accounts):
+            raise ValueError(f"账号索引越界，有效范围: 0-{len(accounts)-1}")
+        
+        self.account_index = account_index
+        account = accounts[account_index]
+        self.account_name = account.get("name", f"Account_{account_index}")
+        
+        self.userName = "{studentId}{suffix}".format(
+            studentId=account.get("StudentID"), 
+            suffix=account.get("suffix", "@lzu.edu.cn")
+        )
+        self.password = account.get("Password", "123456")
+        self.phone = account.get("Phone", "")
+        
         try:
             cache = json_load(self.Cache_LoginInfo)
         except (FileNotFoundError, JSONDecodeError):
@@ -490,16 +512,35 @@ class JoyrunClient(object):
             "pausetime": "",
             "timeDistance": record.timeDistance,
         }
-        # self.logger.info(pretty_json(payload))
-        respJson = self.post("/po.aspx", payload, auth=self.auth.reload(payload))
+        
+        # 使用 rich 进度条
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            console=console,
+            transient=True
+        ) as progress:
+            task = progress.add_task(f"[cyan]上传 {self.account_name} 的跑步记录", total=100)
+            progress.update(task, advance=20)
+            time.sleep(0.1)
+            
+            respJson = self.post("/po.aspx", payload, auth=self.auth.reload(payload))
+            
+            progress.update(task, advance=80)
 
     def run(self):
         """项目主程序外部调用接口"""
-        distance = config.getfloat("Joyrun", "distance")  # 总距离 km
-        pace = config.getfloat("Joyrun", "pace")  # 速度 min/km
-        stride_frequncy = config.getint("Joyrun", "stride_frequncy")  # 步频 step/min
-        record_type = config.get("Joyrun", "record_type")  # 跑步记录类型
-        record_number = config.getint("Joyrun", "record_number")  # 跑步记录编号
+        # 从当前账号配置读取跑步参数
+        accounts = config["accounts"]
+        account = accounts[self.account_index]
+        
+        distance = float(account.get("distance", 4.8))
+        pace = float(account.get("pace", 4.55))
+        stride_frequncy = int(account.get("stride_frequncy", 176))
+        record_type = account.get("record_type", "random")
+        record_number = int(account.get("record_number", 1))
 
         if record_type == "xicao":
             record_instances = record.__Record_XiCao_Instance__

@@ -6,6 +6,7 @@
 #
 
 import os
+import json as json_module
 from configparser import RawConfigParser
 import logging
 
@@ -20,67 +21,67 @@ __all__ = [
 
 
 class Config(object):
-    """[配置文件类，configparser 模块的封装]
+    """[配置文件类，支持JSON格式配置文件]
 
     Attributes:
         class:
-            Config_File    str                配置文件绝对路径
+            Config_File    str    配置文件绝对路径（config.json）
         instance:
-            __config       RawConfigParser    RawConfigParser 类实例
+            __config       dict   JSON 配置数据
     """
 
-    Config_File = os.path.abspath(os.path.join(basedir, "config.ini"))
+    Config_File = os.path.abspath(os.path.join(basedir, "config.json"))
 
     def __init__(self):
-        self.__config = RawConfigParser(allow_no_value=True)
-        self.__config.read(self.Config_File, encoding="utf-8-sig")  # 必须显示指明 encoding
+        self.__config = {}
+        self._load_config()
+
+    def _load_config(self):
+        """加载 JSON 配置文件"""
+        if os.path.exists(self.Config_File):
+            with open(self.Config_File, "r", encoding="utf-8-sig") as f:
+                self.__config = json_module.load(f)
+        else:
+            raise FileNotFoundError(f"配置文件未找到: {self.Config_File}")
 
     def __getitem__(self, idx):
         """config[] 操作运算的封装"""
-        return self.__config[idx]
+        return self.__config.get(idx, {})
 
     def sections(self):
-        """config.sections 函数的封装"""
-        return self.__config.sections()
-
-    def __get(self, get_fn, section, key, **kwargs):
-        """配置文件 get 函数模板
-
-        Args:
-            get_fn     function    原始的 config.get 函数
-            section    str         section 名称
-            key        str         section 下的 option 名称
-            **kwargs               传入 get_fn
-        Returns:
-            value      str/int/float/bool   返回相应 section 下相应 key 的 value 值
-        """
-        value = get_fn(section, key, **kwargs)
-        if value is None:
-            raise ValueError("key '%s' in section [%s] is missing !" % (key, section))
-        else:
-            return value
-
-    """
-        以下对四个 config.get 函数进行封装
-
-        Args:
-            section    str    section 名称
-            key        str    section 下的 option 名称
-        Returns:
-            value             以特定类型返回相应 section 下相应 key 的 value 值
-    """
+        """返回所有的 section 名称"""
+        return [key for key in self.__config.keys() if key != "_comment"]
 
     def get(self, section, key):
-        return self.__get(self.__config.get, section, key)
+        """获取字符串类型的配置值"""
+        if section not in self.__config:
+            raise ValueError(f"section [{ section}] not found !")
+        if key not in self.__config[section]:
+            raise ValueError(f"key '{key}' in section [{section}] is missing !")
+        return self.__config[section][key]
 
     def getint(self, section, key):
-        return self.__get(self.__config.getint, section, key)
+        """获取整数类型的配置值"""
+        value = self.get(section, key)
+        if isinstance(value, int):
+            return value
+        return int(value)
 
     def getfloat(self, section, key):
-        return self.__get(self.__config.getfloat, section, key)
+        """获取浮点数类型的配置值"""
+        value = self.get(section, key)
+        if isinstance(value, (int, float)):
+            return float(value)
+        return float(value)
 
     def getboolean(self, section, key):
-        return self.__get(self.__config.getboolean, section, key)
+        """获取布尔类型的配置值"""
+        value = self.get(section, key)
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            return value.lower() in ('true', 'yes', '1', 'on')
+        return bool(value)
 
 
 class Logger(object):

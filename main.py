@@ -13,13 +13,14 @@ from util import (
     json,
     APPTypeError,
 )
+from rich.console import Console
+from rich.table import Table
 
 config = Config()
 logger = Logger("main")
-
+console = Console()
 
 app = config.get("Base", "APP")
-
 
 if app == "Joyrun":
     from Joyrun import JoyrunClient as Client, __date__
@@ -28,29 +29,105 @@ else:
 
 
 parser = OptionParser(description="LZU running helper! Check your config first, then enjoy yourself!")
-parser.add_option("-c", "--check", help="show 'config.ini' file", action="store_false")
-parser.add_option("-s", "--start", help="start uploading job with %s Client" % app, action="store_false")
+parser.add_option("-c", "--check", help="show config.json file", action="store_true", default=False)
+parser.add_option("-a", "--all", help="run all accounts", action="store_true", default=False)
+parser.add_option("-i", "--index", help="run specific account by index (0-based)", type="int", default=None)
 
 options, args = parser.parse_args()
 
-
-if options.check is not None:
-
+if options.check:
     print("# -- Using %s Client [%s] -- #" % (app, __date__))
 
     for section in config.sections():
-        if section in ["Base", app]:
+        if section == "Base":
             print("# -- Section [%s] -- #" % section)
             print(pretty_json(dict(config[section])))
+        elif section == "accounts":
+            print("# -- Section [%s] -- #" % section)
+            accounts = config[section]
+            if isinstance(accounts, list):
+                print(pretty_json(accounts))
+            else:
+                print(pretty_json(dict(accounts)))
 
-elif options.start is not None:
-
+else:
+    # 默认行为：如果没有指定任何选项，则执行上传
     try:
         logger.info("Running %s Client [%s]" % (app, __date__))
-        client = Client()
-        client.run()
+        
+        # 获取账号列表
+        accounts = config["accounts"]
+        
+        if options.all:
+            # 运行所有账号
+            console.print(f"\n[bold cyan]开始执行所有账号（共 {len(accounts)} 个）[/bold cyan]\n")
+            for idx, account in enumerate(accounts):
+                console.print(f"\n[bold yellow]({idx+1}/{len(accounts)}) 正在执行账号: {account.get('name', f'Account_{idx}')}[/bold yellow]")
+                try:
+                    client = Client(account_index=idx)
+                    client.run()
+                    console.print(f"[bold green]✓ 账号 {account.get('name', f'Account_{idx}')} 上传成功[/bold green]")
+                except Exception as err:
+                    console.print(f"[bold red]✗ 账号 {account.get('name', f'Account_{idx}')} 上传失败[/bold red]")
+                    logger.error(f"账号 {account.get('name', f'Account_{idx}')} 上传失败: {err}")
+                    raise err
+            console.print(f"\n[bold green]所有账号执行完毕！[/bold green]\n")
+        elif options.index is not None:
+            # 运行指定索引的账号
+            if options.index < 0 or options.index >= len(accounts):
+                console.print(f"[bold red]✗ 错误: 账号索引越界，有效范围: 0-{len(accounts)-1}[/bold red]")
+                exit(1)
+            account = accounts[options.index]
+            console.print(f"\n[bold cyan]正在执行账号: {account.get('name', f'Account_{options.index}')}[/bold cyan]\n")
+            client = Client(account_index=options.index)
+            client.run()
+            console.print(f"\n[bold green]✓ 账号 {account.get('name', f'Account_{options.index}')} 上传成功[/bold green]\n")
+        else:
+            # 默认行为：如果只有一个账号则直接运行，否则让用户选择
+            if len(accounts) == 1:
+                console.print(f"\n[bold cyan]执行唯一的账号: {accounts[0].get('name', 'Account_0')}[/bold cyan]\n")
+                client = Client(account_index=0)
+                client.run()
+                console.print(f"\n[bold green]✓ 上传成功[/bold green]\n")
+            else:
+                # 显示账号列表
+                table = Table(title="[bold cyan]请选择要执行的账号[/bold cyan]")
+                table.add_column("序号", style="cyan")
+                table.add_column("账号名", style="magenta")
+                table.add_column("学号", style="green")
+                
+                for idx, account in enumerate(accounts):
+                    table.add_row(
+                        str(idx),
+                        account.get("name", f"Account_{idx}"),
+                        account.get("StudentID", "N/A")
+                    )
+                
+                console.print(table)
+                console.print()
+                
+                choice_str = input("请输入账号序号 (0-{}): ".format(len(accounts)-1))
+                try:
+                    choice = int(choice_str)
+                    if choice < 0 or choice >= len(accounts):
+                        console.print(f"[bold red]✗ 错误: 序号越界[/bold red]")
+                        exit(1)
+                    
+                    account = accounts[choice]
+                    console.print(f"\n[bold cyan]正在执行账号: {account.get('name', f'Account_{choice}')}[/bold cyan]\n")
+                    client = Client(account_index=choice)
+                    client.run()
+                    console.print(f"\n[bold green]✓ 账号 {account.get('name', f'Account_{choice}')} 上传成功[/bold green]\n")
+                except ValueError:
+                    console.print("[bold red]✗ 错误: 请输入有效的数字[/bold red]")
+                    exit(1)
+                    
     except Exception as err:
         logger.error("upload record failed !")
         raise err
-    else:
-        logger.info("upload record success !")
+
+                    
+    except Exception as err:
+        logger.error("upload record failed !")
+        raise err
+

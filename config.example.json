@@ -1,7 +1,8 @@
 {
   "Base": {
     "APP": "Joyrun",
-    "debug": true
+    "debug": true,
+    "account_interval": 5
   },
   "accounts": [
     {
@@ -40,6 +41,7 @@
     "record_number": "选择具体路径。0表示随机，1-N表示选择第N条预设路径",
     "distance": "跑步距离，单位km",
     "pace": "每公里用时，单位分钟（一般不用修改）",
-    "stride_frequncy": "步幅，单位步/分钟（一般不用修改）"
+    "stride_frequncy": "步幅，单位步/分钟（一般不用修改）",
+    "account_interval": "多账号运行时的间隔时间（秒），防止请求过于频繁"
   }
 }

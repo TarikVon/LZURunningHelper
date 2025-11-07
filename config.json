@@ -1,7 +1,8 @@
 {
   "Base": {
     "APP": "Joyrun",
-    "debug": false
+    "debug": false,
+    "account_interval": 5
   },
   "accounts": [
     {
@@ -29,8 +30,8 @@
       "stride_frequncy": 176
     },    
     {
-      "name": "account1",
-      "StudentID": "320250935091",
+      "name": "",
+      "StudentID": "",
       "Password": "123456",
       "suffix": "@lzu.edu.cn",
       "Phone": "",

@@ -60,7 +60,6 @@ except (ImportError, SystemError, ValueError):
         RecordNumberError,
     )
 
-from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn
 from rich.console import Console
 
 Root_Dir = os.path.join(os.path.dirname(__file__), "../")
@@ -513,22 +512,8 @@ class JoyrunClient(object):
             "timeDistance": record.timeDistance,
         }
         
-        # 使用 rich 进度条
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
-            console=console,
-            transient=True
-        ) as progress:
-            task = progress.add_task(f"[cyan]上传 {self.account_name} 的跑步记录", total=100)
-            progress.update(task, advance=20)
-            time.sleep(0.1)
-            
-            respJson = self.post("/po.aspx", payload, auth=self.auth.reload(payload))
-            
-            progress.update(task, advance=80)
+        # 直接上传，不显示个别进度条（由主程序的总进度条管理）
+        respJson = self.post("/po.aspx", payload, auth=self.auth.reload(payload))
 
     def run(self):
         """项目主程序外部调用接口"""

@@ -5,6 +5,7 @@
 # 项目运行主程序
 #
 
+import time
 from optparse import OptionParser
 from util import (
     Config,
@@ -15,6 +16,7 @@ from util import (
 )
 from rich.console import Console
 from rich.table import Table
+from rich.progress import Progress, BarColumn, TextColumn
 
 config = Config()
 logger = Logger("main")
@@ -55,23 +57,48 @@ else:
     try:
         logger.info("Running %s Client [%s]" % (app, __date__))
         
-        # 获取账号列表
+        # 获取账号列表和配置
         accounts = config["accounts"]
+        account_interval = config.getint("Base", "account_interval") if "account_interval" in config["Base"] else 0
         
         if options.all:
-            # 运行所有账号
+            # 运行所有账号 - 使用总进度条
             console.print(f"\n[bold cyan]开始执行所有账号（共 {len(accounts)} 个）[/bold cyan]\n")
-            for idx, account in enumerate(accounts):
-                console.print(f"\n[bold yellow]({idx+1}/{len(accounts)}) 正在执行账号: {account.get('name', f'Account_{idx}')}[/bold yellow]")
-                try:
-                    client = Client(account_index=idx)
-                    client.run()
-                    console.print(f"[bold green]✓ 账号 {account.get('name', f'Account_{idx}')} 上传成功[/bold green]")
-                except Exception as err:
-                    console.print(f"[bold red]✗ 账号 {account.get('name', f'Account_{idx}')} 上传失败[/bold red]")
-                    logger.error(f"账号 {account.get('name', f'Account_{idx}')} 上传失败: {err}")
-                    raise err
-            console.print(f"\n[bold green]所有账号执行完毕！[/bold green]\n")
+            
+            with Progress(
+                TextColumn("[progress.description]{task.description}"),
+                BarColumn(),
+                TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+                console=console,
+                transient=True
+            ) as overall_progress:
+                overall_task = overall_progress.add_task(
+                    "[cyan]总进度", 
+                    total=len(accounts)
+                )
+                
+                for idx, account in enumerate(accounts):
+                    account_name = account.get('name', f'Account_{idx}')
+                    console.print(f"\n[bold yellow]({idx+1}/{len(accounts)}) 正在执行账号: {account_name}[/bold yellow]")
+                    
+                    try:
+                        client = Client(account_index=idx)
+                        client.run()
+                        console.print(f"[bold green]✓ 账号 {account_name} 上传成功[/bold green]")
+                    except Exception as err:
+                        console.print(f"[bold red]✗ 账号 {account_name} 上传失败[/bold red]")
+                        logger.error(f"账号 {account_name} 上传失败: {err}")
+                        raise err
+                    
+                    # 更新总进度条
+                    overall_progress.update(overall_task, advance=1)
+                    
+                    # 如果不是最后一个账号，等待间隔时间
+                    if idx < len(accounts) - 1 and account_interval > 0:
+                        console.print(f"[cyan]等待 {account_interval} 秒后执行下一个账号...[/cyan]")
+                        time.sleep(account_interval)
+            
+            console.print(f"\n[bold green]✓ 所有账号执行完毕！[/bold green]\n")
         elif options.index is not None:
             # 运行指定索引的账号
             if options.index < 0 or options.index >= len(accounts):
@@ -121,11 +148,6 @@ else:
                 except ValueError:
                     console.print("[bold red]✗ 错误: 请输入有效的数字[/bold red]")
                     exit(1)
-                    
-    except Exception as err:
-        logger.error("upload record failed !")
-        raise err
-
                     
     except Exception as err:
         logger.error("upload record failed !")

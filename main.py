@@ -18,9 +18,23 @@ from rich.console import Console
 from rich.table import Table
 from rich.progress import Progress, BarColumn, TextColumn
 
-config = Config()
-logger = Logger("main")
+# 解析命令行参数以获取配置文件路径
+parser = OptionParser(description="LZU running helper! Check your config first, then enjoy yourself!")
+parser.add_option("-c", "--check", help="show config file", action="store_true", default=False)
+parser.add_option("-a", "--all", help="run all accounts", action="store_true", default=False)
+parser.add_option("-i", "--index", help="run specific account by index (0-based)", type="int", default=None)
+parser.add_option("-f", "--config-file", help="specify config file path (default: config.json)", type="string", default=None)
+
+options, args = parser.parse_args()
+
+# 使用指定的配置文件或默认配置文件
+config = Config(config_file=options.config_file)
+logger = Logger("main", config=config)
 console = Console()
+
+# 显示正在使用的配置文件
+if options.config_file:
+    logger.info(f"Using config file: {options.config_file}")
 
 app = config.get("Base", "APP")
 
@@ -28,14 +42,6 @@ if app == "Joyrun":
     from Joyrun import JoyrunClient as Client, __date__
 else:
     raise APPTypeError("unsupported running APP -- %s !" % app)
-
-
-parser = OptionParser(description="LZU running helper! Check your config first, then enjoy yourself!")
-parser.add_option("-c", "--check", help="show config.json file", action="store_true", default=False)
-parser.add_option("-a", "--all", help="run all accounts", action="store_true", default=False)
-parser.add_option("-i", "--index", help="run specific account by index (0-based)", type="int", default=None)
-
-options, args = parser.parse_args()
 
 if options.check:
     print("# -- Using %s Client [%s] -- #" % (app, __date__))
@@ -82,7 +88,7 @@ else:
                     console.print(f"\n[bold yellow]({idx+1}/{len(accounts)}) 正在执行账号: {account_name}[/bold yellow]")
                     
                     try:
-                        client = Client(account_index=idx)
+                        client = Client(account_index=idx, config_instance=config)
                         client.run()
                         console.print(f"[bold green]✓ 账号 {account_name} 上传成功[/bold green]")
                     except Exception as err:
@@ -106,14 +112,14 @@ else:
                 exit(1)
             account = accounts[options.index]
             console.print(f"\n[bold cyan]正在执行账号: {account.get('name', f'Account_{options.index}')}[/bold cyan]\n")
-            client = Client(account_index=options.index)
+            client = Client(account_index=options.index, config_instance=config)
             client.run()
             console.print(f"\n[bold green]✓ 账号 {account.get('name', f'Account_{options.index}')} 上传成功[/bold green]\n")
         else:
             # 默认行为：如果只有一个账号则直接运行，否则让用户选择
             if len(accounts) == 1:
                 console.print(f"\n[bold cyan]执行唯一的账号: {accounts[0].get('name', 'Account_0')}[/bold cyan]\n")
-                client = Client(account_index=0)
+                client = Client(account_index=0, config_instance=config)
                 client.run()
                 console.print(f"\n[bold green]✓ 上传成功[/bold green]\n")
             else:
@@ -142,7 +148,7 @@ else:
                     
                     account = accounts[choice]
                     console.print(f"\n[bold cyan]正在执行账号: {account.get('name', f'Account_{choice}')}[/bold cyan]\n")
-                    client = Client(account_index=choice)
+                    client = Client(account_index=choice, config_instance=config)
                     client.run()
                     console.print(f"\n[bold green]✓ 账号 {account.get('name', f'Account_{choice}')} 上传成功[/bold green]\n")
                 except ValueError:

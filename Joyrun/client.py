@@ -134,14 +134,18 @@ class JoyrunClient(object):
     BaseUrl = "https://api.thejoyrun.com"
     Cache_LoginInfo = "Joyrun_LoginInfo.json"
 
-    def __init__(self, account_index=None):
+    def __init__(self, account_index=None, config_instance=None):
         """初始化 Joyrun 客户端
 
         Args:
             account_index: 账号索引，如果为None则使用第一个账号
+            config_instance: Config实例，如果为None则使用全局config
         """
+        # 保存配置实例
+        self.config = config_instance if config_instance else config
+        
         # 获取账号配置
-        accounts = config["accounts"]
+        accounts = self.config["accounts"]
         if not accounts or len(accounts) == 0:
             raise ValueError("config.json 中未找到账号配置")
         
@@ -518,7 +522,7 @@ class JoyrunClient(object):
     def run(self):
         """项目主程序外部调用接口"""
         # 从当前账号配置读取跑步参数
-        accounts = config["accounts"]
+        accounts = self.config["accounts"]
         account = accounts[self.account_index]
         
         distance = float(account.get("distance", 4.8))

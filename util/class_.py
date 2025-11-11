@@ -25,24 +25,31 @@ class Config(object):
 
     Attributes:
         class:
-            Config_File    str    配置文件绝对路径（config.json）
+            Config_File    str    默认配置文件绝对路径（config.json）
         instance:
             __config       dict   JSON 配置数据
+            config_file    str    实际使用的配置文件路径
     """
 
     Config_File = os.path.abspath(os.path.join(basedir, "config.json"))
 
-    def __init__(self):
+    def __init__(self, config_file=None):
+        """初始化配置类
+        
+        Args:
+            config_file: 可选的配置文件路径，如果未指定则使用默认路径
+        """
         self.__config = {}
+        self.config_file = config_file if config_file else self.Config_File
         self._load_config()
 
     def _load_config(self):
         """加载 JSON 配置文件"""
-        if os.path.exists(self.Config_File):
-            with open(self.Config_File, "r", encoding="utf-8-sig") as f:
+        if os.path.exists(self.config_file):
+            with open(self.config_file, "r", encoding="utf-8-sig") as f:
                 self.__config = json_module.load(f)
         else:
-            raise FileNotFoundError(f"配置文件未找到: {self.Config_File}")
+            raise FileNotFoundError(f"配置文件未找到: {self.config_file}")
 
     def __getitem__(self, idx):
         """config[] 操作运算的封装"""
@@ -90,18 +97,24 @@ class Logger(object):
     Attributes:
         class:
             Default_Name     str                    缺省的日志名
-            config           Config                 配置文件类实例
         instance:
             logger           logging.Logger         logging 的 Logger 对象
             level            int                    logging.level 级别
+            config           Config                 配置文件类实例
             format           logging.Formatter      日志格式
             console_headler  logging.StreamHandler  控制台日志 handler
     """
 
     Default_Name = __name__
-    config = Config()
 
-    def __init__(self, name=None):
+    def __init__(self, name=None, config=None):
+        """初始化日志类
+        
+        Args:
+            name: 日志名称
+            config: Config 实例，如果未指定则创建默认配置
+        """
+        self.config = config if config else Config()
         self.logger = logging.getLogger(name or self.Default_Name)
         self.level = logging.DEBUG if self.config.getboolean("Base", "debug") else logging.INFO
         self.logger.setLevel(self.level)
